@@ -1,0 +1,168 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Chat{% endblock %}
+
+<body>
+
+{% block content %}
+<div class="back-container">
+    
+    <div class="container front-container1">
+        <div class="row chat-top">
+            <div class="col-sm-4 border-right border-secondary">
+                <span class="ml-2">{{users.username}}</span>
+
+            </div>
+            
+            <div class="col-sm-8">
+                <div class="row align-items-center bg-light">
+                    <div class="col">
+                        <b>{{user.username}}</b>
+                    </div>
+            </div>
+        </div>
+       
+        <div class="row">
+            <div class="col-sm-4 contacts">
+                <div class="list-group position-absolute bottom-20 w-25 p-3">
+                    {% for user in users %}
+                    <a href="{% url 'chat' username=user.username %}" class="list-group-item list-group-item-action list-group-item-info " aria-current="true">
+                        {{user.username}}
+                    {% endfor %}
+                    </a>
+                    
+                  </div>
+            </div>
+            <div class="col-sm-8 message-area">
+                <div class="message-table-scroll">
+                    <table class="table">
+                        <tbody id='chat-body'>
+                            {% for message in messages %}
+                            {% if message.sender == request.user.username %}
+                            <tr>
+                                <td>
+                                    <p class="bg-success p-2 mt-2 mr-5 shadow-sm text-white float-right rounded">
+                                        {{message.message}}
+                                    </p>
+                                </td>
+                                <td>
+                                    <p><small class="p-1 shadow-sm">{{message.timestamp|time:'H:i'}}</small>
+                                    </p>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td>
+                                    <p class="bg-primary p-2 mt-2 mr-5 shadow-sm text-white float-left rounded">
+                                        {{message.message}}
+                                    </p>
+                                </td>
+                                <td>
+                                    <p><small class="p-1 shadow-sm">{{message.timestamp|time:'H:i'}}</small>
+                                    </p>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row message-box p-3">
+                    <div class="col-sm-2 mt-2">
+                        
+                    </div>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="message_input" placeholder="Write message...">
+
+                    </div>
+                    <div class="col-sm-2 mt-1">
+                        <div class="control">
+                            <button class="btn btn-success" id="chat-message-submit">Send</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{{user.id|json_script:"json-username"}}
+{{request.user.username|json_script:"json-message-username"}}
+
+<script>
+    var id = JSON.parse(document.getElementById('json-username').textContent)
+    console.log(id)
+
+    var sender = JSON.parse(document.getElementById('json-message-username').textContent)
+
+    var ws = new WebSocket(
+        'ws://'
+        +window.location.host
+        +'/ws/'
+        +id+
+        '/')
+
+    ws.onopen = function(event){
+        console.log('Connection open')
+    }
+
+    ws.onclose = function(event){
+        console.log(`Connection Close, Event:${event}`)
+        console.log(event)
+
+    }
+
+    ws.onmessage = function(event){
+        console.log(`Message Received and Event: ${event}`)
+        // console.log(event)
+
+        var data = JSON.parse(event.data)
+        console.log("data:",data)
+
+        if (data.username == sender){
+            document.querySelector('#chat-body').innerHTML += `
+            <tr>
+            <td>
+                <p class="bg-success p-2 mt-2 mr-5 shadow-sm text-white float-right rounded">
+                    ${data.message}
+                </p>
+            </td>
+            </tr>`
+        }
+        else{
+            document.querySelector('#chat-body').innerHTML += `
+            <tr>
+            <td>
+                <p class="bg-success p-2 mt-2 mr-5 shadow-sm text-white float-left rounded">
+                    ${data.message}
+                </p>
+            </td>
+            </tr>`
+        }
+    }
+
+    ws.onerror = function(event){
+        console.log(`error and Event: ${event}`)
+        console.log(event)
+
+    }
+
+    document.querySelector('#chat-message-submit').onclick = function(event){
+        const message_input = document.querySelector('#message_input')
+        const message = message_input.value
+
+        ws.send(JSON.stringify({
+            'message' : message,
+            'username': sender
+        }))
+        message_input = ' '
+    }
+   
+
+</script>
+
+{% endblock %}
+</body>

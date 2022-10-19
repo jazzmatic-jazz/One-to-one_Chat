@@ -1,0 +1,18 @@
+{% extends 'app/base.html' %}
+
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<h1>Personal Chat</h1>
+  <div class="list-group position-absolute bottom-50 w-50 p-3">
+    {% for user in users %}
+    <a href="{% url 'chat' username=user.username %}" class="list-group-item list-group-item-action list-group-item-info " aria-current="true">
+        {{user.username}}
+    {% endfor %}
+    </a>
+    
+  </div>
+    
+</div>
+
+{% endblock %}
